@@ -1,43 +1,25 @@
-import './App.css';
-import React, { useState, useEffect } from 'react';
-
+import React, { useEffect, useState } from 'react';
 
 function App() {
   const [logs, setLogs] = useState([]);
 
   useEffect(() => {
-    // Establish connection to the server
-    const eventSource = new EventSource('http://localhost:4001/logs');
-
-    eventSource.onmessage = (event) => {
-      setLogs((prevLogs) => {
-        console.log(prevLogs)
-        const newLogs = [...prevLogs, event.data];
-        // Keep only the last 10 logs
-        return newLogs.slice(-10);
-      });
+    const ws = new WebSocket('ws://localhost:4001');
+    ws.onmessage = (event) => {
+      setLogs(event.data.split('\n').slice(-10)); // Keep only the last 10 lines
     };
 
-    eventSource.onerror = (error) => {
-      console.error('Error connecting to the logs stream:', error);
-      eventSource.close();
-    };
-
-    return () => {
-      eventSource.close(); // Cleanup on component unmount
-    };
+    return () => ws.close();
   }, []);
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Log Viewer</h1>
-        <div className="logs">
-          {logs.map((log, index) => (
-            <pre key={index}>{log}</pre>
-          ))}
-        </div>
-      </header>
+    <div style={{ padding: '20px', fontFamily: 'monospace' }}>
+      <h1>Real-Time Log Viewer</h1>
+      <div style={{ background: '#f4f4f4', padding: '10px', borderRadius: '5px', overflowY: 'auto', height: '300px' }}>
+        {logs.map((line, index) => (
+          <div key={index}>{line}</div>
+        ))}
+      </div>
     </div>
   );
 }
